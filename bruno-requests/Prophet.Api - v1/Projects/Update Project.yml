@@ -1,0 +1,44 @@
+info:
+  name: Update Project
+  type: http
+  seq: 4000
+  tags:
+    - Projects
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Updated Name",
+        "description": "Updated description",
+        "expectedDate": "2026-12-31"
+      }
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200 or 404", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 400, 404]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data has id", () => {
+            expect(json.data).to.have.property("id");
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

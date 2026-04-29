@@ -1,0 +1,7 @@
+info:
+  name: Prophet.Api - v1
+  type: folder
+  seq: 1
+# Standalone Prophet API — no auth, no JWT, no X-Product-Id.
+# Base URL: https://localhost:7017
+# Run "Create Project" first to populate {{projectId}}, then "Create Version" for {{versionId}}.

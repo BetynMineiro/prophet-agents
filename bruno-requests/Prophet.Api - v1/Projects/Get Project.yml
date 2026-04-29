@@ -1,0 +1,36 @@
+info:
+  name: Get Project
+  type: http
+  seq: 3000
+  tags:
+    - Projects
+
+http:
+  method: GET
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200 or 404", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 404]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data has id", () => {
+            expect(json.data).to.have.property("id");
+          });
+          test("Response data has name", () => {
+            expect(json.data).to.have.property("name");
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,36 @@
+info:
+  name: List Version Files
+  type: http
+  seq: 4000
+  tags:
+    - Pipeline
+
+http:
+  method: GET
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}/versions/{{versionId}}/files"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200 or 404", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 404]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data is an array", () => {
+            expect(json.data).to.be.an("array");
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Lists all files stored on disk for this pipeline version (inputs, outputs, artifacts). Files are served via GET /v1/prophet/files/{*path}.

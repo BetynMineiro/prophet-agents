@@ -1,0 +1,36 @@
+info:
+  name: List Pipeline Artifacts
+  type: http
+  seq: 3000
+  tags:
+    - Pipeline
+
+http:
+  method: GET
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}/versions/{{versionId}}/artifacts"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200 or 404", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 404]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data is an array", () => {
+            expect(json.data).to.be.an("array");
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Lists all pipeline artifacts (JSONB rows per artifactType) for the version. Empty until pipeline agents persist artifacts.

@@ -1,0 +1,35 @@
+info:
+  name: List Projects
+  type: http
+  seq: 1000
+  tags:
+    - Projects
+
+http:
+  method: GET
+  url: "{{baseUrl}}/v1/prophet/projects?pageSize=10&activeState=All"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200", () => expect(res.getStatus()).to.equal(200));
+        const json = res.getBody();
+        test("Response has success flag", () => {
+          expect(json.success).to.be.true;
+        });
+        test("Response data has items", () => {
+          expect(json.data).to.have.property("items");
+        });
+        if (res.getStatus() === 200 && json.data && json.data.items && json.data.items.length > 0) {
+          bru.setVar("projectId", json.data.items[0].id);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Cursor pagination: `pageSize` (1–500), `cursor` (GUID), `searchText`, `activeState` = `All` | `Active` | `Inactive`.

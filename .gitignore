@@ -1,0 +1,99 @@
+# =============================================================================
+# Prophet — monorepo .gitignore
+# Covers: backend/ (.NET 10) and frontend/ (Next.js 16)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Common
+# -----------------------------------------------------------------------------
+.DS_Store
+.idea/
+*.pem
+*.env
+.env
+.env.local
+.env*.local
+
+# -----------------------------------------------------------------------------
+# .NET / Backend
+# -----------------------------------------------------------------------------
+
+# Build output
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Oo]bj/
+[Oo]ut/
+**/[Bb]in/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / Rider
+.vs/
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+TestResults/
+coverage.opencover.xml
+
+# Rider / JetBrains
+.idea/
+
+# NuGet packages (central package management — lock files are fine to commit)
+backend/**/packages/
+backend/**/*.nupkg
+backend/**/*.[Nn]u[Gg]et.props
+backend/**/*.[Nn]u[Gg]et.targets
+
+# User Secrets (local dev, never commit)
+backend/**/secrets.json
+
+# Local appsettings override (templates are in docs/)
+backend/**/appsettings.Development.json
+backend/**/appsettings.Local.json
+
+# Local file storage (generated at runtime)
+backend/src/Prophet.Api/storage/
+
+# dotnet tool manifest (optional — keep if you commit tools)
+# .config/dotnet-tools.json
+
+# -----------------------------------------------------------------------------
+# Next.js / Frontend
+# -----------------------------------------------------------------------------
+
+# Dependencies
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.*
+
+# Build output
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# TypeScript incremental build
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Coverage / test results
+frontend/coverage/
+frontend/test-results/
+frontend/blob-report/
+frontend/playwright-report/
+frontend/playwright/.cache/
+
+# Debug logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*

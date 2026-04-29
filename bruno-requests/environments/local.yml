@@ -1,0 +1,14 @@
+name: local
+vars:
+  - name: baseUrl
+    value: "https://localhost:7017"
+    enabled: true
+    secret: false
+  - name: projectId
+    value: ""
+    enabled: true
+    secret: false
+  - name: versionId
+    value: ""
+    enabled: true
+    secret: false

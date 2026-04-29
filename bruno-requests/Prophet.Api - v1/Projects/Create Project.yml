@@ -1,0 +1,46 @@
+info:
+  name: Create Project
+  type: http
+  seq: 2000
+  tags:
+    - Projects
+
+http:
+  method: POST
+  url: "{{baseUrl}}/v1/prophet/projects"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Test Project",
+        "description": "Academic pipeline test",
+        "expectedDate": null
+      }
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 201", () => expect(res.getStatus()).to.equal(201));
+        if (res.getStatus() === 201) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data has id", () => {
+            expect(json.data).to.have.property("id");
+            expect(json.data.id).to.be.a("string").and.not.empty;
+          });
+          if (json.data && json.data.id) {
+            bru.setVar("projectId", json.data.id);
+          }
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

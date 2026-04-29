@@ -1,0 +1,39 @@
+info:
+  name: List Versions
+  type: http
+  seq: 1000
+  tags:
+    - Artifact Versions
+
+http:
+  method: GET
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}/versions?pageSize=20"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200 or 404", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 404]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data has items", () => {
+            expect(json.data).to.have.property("items");
+          });
+          if (json.data && json.data.items && json.data.items.length > 0 && json.data.items[0].id) {
+            bru.setVar("versionId", json.data.items[0].id);
+          }
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Cursor pagination: `pageSize` (1–500), `cursor` (version number as string for next page).

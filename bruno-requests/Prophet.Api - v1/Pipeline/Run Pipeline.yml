@@ -1,0 +1,42 @@
+info:
+  name: Run Pipeline
+  type: http
+  seq: 1000
+  tags:
+    - Pipeline
+
+http:
+  method: POST
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}/versions/{{versionId}}/run"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "interactiveSteps": false
+      }
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200, 404, or 409", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 404, 409]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Starts the pipeline for the given version. Returns 409 if the pipeline is already running or completed. Use **Get Pipeline Status** to poll progress.

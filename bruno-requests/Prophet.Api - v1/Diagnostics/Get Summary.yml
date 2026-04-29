@@ -1,0 +1,34 @@
+info:
+  name: Get Summary
+  type: http
+  seq: 1000
+  tags:
+    - Diagnostics
+
+http:
+  method: GET
+  url: "{{baseUrl}}/v1/prophet/diagnostics/summary"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200", () => expect(res.getStatus()).to.equal(200));
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data exists", () => {
+            expect(json.data).to.exist;
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Diagnostics summary for this Prophet API host only — health, LLM provider config, and pipeline statistics.

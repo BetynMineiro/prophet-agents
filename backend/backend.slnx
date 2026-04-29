@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/1-Port/">
+    <Project Path="src/Prophet.Api/Prophet.Api.csproj" />
+  </Folder>
+  <Folder Name="/2-ApplicationCore/">
+    <Project Path="src/Prophet.Application/Prophet.Application.csproj" />
+    <Project Path="src/Prophet.Domain/Prophet.Domain.csproj" />
+  </Folder>
+  <Folder Name="/3-Adapters/">
+    <Project Path="src/Prophet.Adapters.LLM/Prophet.Adapters.LLM.csproj" />
+    <Project Path="src/Prophet.Adapters.LocalStorage/Prophet.Adapters.LocalStorage.csproj" />
+    <Project Path="src/Prophet.Adapters.Postgres/Prophet.Adapters.Postgres.csproj" />
+  </Folder>
+  <Folder Name="/4-Common/">
+    <Project Path="src/Prophet.CrossCutting/Prophet.CrossCutting.csproj" />
+  </Folder>
+  <Folder Name="/5-Tests/">
+    <Project Path="src/Prophet.Tests/Prophet.Tests.csproj" />
+    <Project Path="src/Prophet.Tests.E2E/Prophet.Tests.E2E.csproj" />
+  </Folder>
+</Solution>

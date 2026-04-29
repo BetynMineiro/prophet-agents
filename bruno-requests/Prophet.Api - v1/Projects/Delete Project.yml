@@ -1,0 +1,33 @@
+info:
+  name: Delete Project
+  type: http
+  seq: 5000
+  tags:
+    - Projects
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200 or 404", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 400, 404]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Soft-deletes the project. Use **Restore Project** to undo.

@@ -1,0 +1,25 @@
+info:
+  name: Health Readiness
+  type: http
+  seq: 1100
+  tags:
+    - Health
+
+http:
+  method: GET
+  url: "{{baseUrl}}/health/ready"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200", () => expect(res.getStatus()).to.equal(200));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Readiness probe — checks database connectivity (PostgreSQL). Returns 200 when the DB is reachable, 503 otherwise.

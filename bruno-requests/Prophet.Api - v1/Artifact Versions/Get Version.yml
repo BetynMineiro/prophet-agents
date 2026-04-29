@@ -1,0 +1,33 @@
+info:
+  name: Get Version
+  type: http
+  seq: 3000
+  tags:
+    - Artifact Versions
+
+http:
+  method: GET
+  url: "{{baseUrl}}/v1/prophet/projects/{{projectId}}/versions/{{versionId}}"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status is 200 or 404", () => {
+          expect(res.getStatus()).to.be.oneOf([200, 404]);
+        });
+        if (res.getStatus() === 200) {
+          const json = res.getBody();
+          test("Response has success flag", () => {
+            expect(json.success).to.be.true;
+          });
+          test("Response data has id", () => {
+            expect(json.data).to.have.property("id");
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
