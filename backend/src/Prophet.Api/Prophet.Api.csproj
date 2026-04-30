@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <RootNamespace>Prophet.Api</RootNamespace>
+    <UserSecretsId>prophet-api-local-dev</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Prophet.Application\Prophet.Application.csproj" />

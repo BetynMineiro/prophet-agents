@@ -2,7 +2,7 @@
 
 **Prophet** is an open academic project that turns requirement documents, ideas, or feature descriptions into a structured set of technical artifacts — domain models, architecture proposals, Mermaid diagrams, interactive HTML PoCs, mobile wireframes, and technical documentation — using a multi-agent LLM pipeline.
 
-The project has no authentication, no login, no external cloud storage. It is designed to run entirely on a local machine with a PostgreSQL database and any compatible LLM provider (Azure OpenAI, OpenAI, Anthropic, or others).
+The project has no authentication, no login, no database, no external storage. It is designed to run entirely on a local machine — all state lives in memory — with any compatible LLM provider (Azure OpenAI, OpenAI, Anthropic, or others).
 
 ---
 
@@ -88,10 +88,9 @@ Prophet/
 │       ├── Prophet.Domain/              Entities, value objects, pipeline step IDs
 │       ├── Prophet.CrossCutting/        Result pattern, validation, pagination
 │       ├── Prophet.Adapters.LLM/        LLM adapter (Azure OpenAI, OpenAI, Anthropic)
-│       ├── Prophet.Adapters.Postgres/   EF Core + ProphetDbContext (schema: prophet)
-│       ├── Prophet.Adapters.LocalStorage/  Local filesystem storage + file-serving
-│       ├── Prophet.Tests/               Unit tests (84 tests)
-│       └── Prophet.Tests.E2E/           E2E tests (in-memory DB)
+│       ├── Prophet.Adapters.InMemory/   In-memory stores (no DB, no filesystem)
+│       ├── Prophet.Tests/               Unit tests
+│       └── Prophet.Tests.E2E/           E2E tests (in-process API)
 └── frontend/                   Next.js 16 app (port 4000)
     ├── app/
     ├── components/
@@ -106,68 +105,37 @@ Prophet/
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 20+](https://nodejs.org/)
-- [PostgreSQL 15+](https://www.postgresql.org/) (local or Docker)
 - An LLM API key (Azure OpenAI, OpenAI, or Anthropic)
 
 ---
 
 ## Running locally
 
-### 1. PostgreSQL
-
-```bash
-# Option A — Docker (quickest)
-docker run -d \
-  --name prophet-db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=prophet \
-  -p 5432:5432 \
-  postgres:16
-
-# Option B — existing PostgreSQL instance
-# Just create a database called "prophet" (or any name — set it in the connection string below)
-```
-
-### 2. Backend secrets
+### 1. Backend secrets
 
 Prophet uses [.NET User Secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets) for local credentials. None of these values are ever committed.
 
 ```bash
 cd Prophet/backend
 
-# PostgreSQL connection string
-dotnet user-secrets set "ConnectionStrings:Default" \
-  "Host=localhost;Port=5432;Database=prophet;Username=postgres;Password=postgres" \
-  --project src/Prophet.Api
-
 # LLM — see "Configuring models" section below for all options
 dotnet user-secrets set "Llm:Providers:azure:ApiKey" "<your-key>" --project src/Prophet.Api
 dotnet user-secrets set "Llm:Providers:azure:BaseUrl" "https://YOUR-RESOURCE.openai.azure.com" --project src/Prophet.Api
 ```
 
-### 3. Database migrations
+> Without a key the API still starts, but running the pipeline returns an error. All other endpoints work normally.
 
-```bash
-cd Prophet/backend
-dotnet ef database update \
-  --project src/Prophet.Adapters.Postgres \
-  --startup-project src/Prophet.Api \
-  --context ProphetDbContext
-```
-
-### 4. Run the backend
+### 2. Run the backend
 
 ```bash
 cd Prophet/backend
 dotnet run --project src/Prophet.Api
 # → https://localhost:7017
-# → Swagger UI: https://localhost:7017/swagger (Development only)
 ```
 
-The `storage/` folder is created automatically under `src/Prophet.Api/storage/` on first file upload. All generated files (PoC HTML, documentation.md, etc.) are stored here and served via `GET /v1/prophet/files/{*path}`.
+All state is kept in memory — no database or filesystem setup needed. State is lost on restart (by design).
 
-### 5. Run the frontend
+### 3. Run the frontend
 
 ```bash
 cd Prophet/frontend
@@ -313,9 +281,6 @@ All endpoints are open — no `Authorization` header required.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | Liveness check |
-| `GET` | `/health/ready` | Readiness check (DB connection) |
-| `GET` | `/swagger` | Swagger UI (Development only) |
 | `GET/POST` | `/v1/prophet/projects` | List / create projects |
 | `GET/PUT/DELETE` | `/v1/prophet/projects/{id}` | Get / update / soft-delete a project |
 | `PATCH` | `/v1/prophet/projects/{id}/restore` | Restore a soft-deleted project |
@@ -333,7 +298,6 @@ All endpoints are open — no `Authorization` header required.
 | `GET/POST/DELETE` | `/v1/prophet/projects/{id}/final-artifacts` | Manage final output files |
 | `GET/POST/DELETE` | `/v1/prophet/projects/{id}/html-pocs` | Manage HTML PoC files |
 | `GET` | `/v1/prophet/files/{*path}` | Serve a stored file by path |
-| `GET` | `/v1/prophet/diagnostics/summary` | API metrics summary |
 | `POST` | `/v1/prophet/dev/llm/complete` | Test LLM call (Development only) |
 
 ---
@@ -342,14 +306,12 @@ All endpoints are open — no `Authorization` header required.
 
 | Key | Default | Description |
 |---|---|---|
-| `ConnectionStrings:Default` | _(empty)_ | PostgreSQL connection string |
 | `Storage:Root` | `prophet` | Root prefix for stored paths |
-| `Storage:BasePath` | `./storage` | Local filesystem base directory |
 | `Storage:ApiBaseUrl` | `https://localhost:7017` | Base URL used to build file-serve URLs |
-| `Cors:AllowedOrigins` | `localhost:3000` | Allowed origins (array) |
+| `Cors:LocalhostPortFrom` | `3000` | First localhost port allowed (inclusive) |
+| `Cors:LocalhostPortTo` | `5000` | Last localhost port allowed (inclusive) |
 | `RateLimit:Api:PermitLimit` | `100` | Requests per window |
 | `RateLimit:Api:WindowSeconds` | `60` | Rate limit window in seconds |
-| `Diagnostics:Metrics:WindowHours` | `1` | Rolling window for in-memory metrics |
 | `Llm:Providers:{name}:Driver` | — | `AzureOpenAI`, `OpenAiV1`, or `AnthropicMessages` |
 | `Llm:Providers:{name}:BaseUrl` | — | Provider base URL (no trailing slash) |
 | `Llm:Providers:{name}:ApiKey` | — | API key (set via User Secrets) |
@@ -362,71 +324,10 @@ All endpoints are open — no `Authorization` header required.
 
 ---
 
-## Database schema
-
-Schema: `prophet`. All tables use `uuid` primary keys.
-
-```mermaid
-erDiagram
-    ProphetProjects {
-        uuid Id PK
-        string Name
-        string Description
-        date ExpectedDate
-        bool IsActive
-        datetime CreatedAtUtc
-        datetime UpdatedAtUtc
-        datetime DeletedAtUtc
-    }
-    ProphetProjectInputDocuments {
-        uuid Id PK
-        uuid ProphetProjectId FK
-        string OriginalFileName
-        string ContentType
-        string StorageObjectPath
-        datetime CreatedAtUtc
-    }
-    ProphetArtifactVersions {
-        uuid Id PK
-        uuid ProphetProjectId FK
-        uuid ParentVersionId FK
-        int VersionNumber
-        string ChangeSummary
-        string PipelineStatus
-        string PipelineError
-        datetime CreatedAtUtc
-        datetime UpdatedAtUtc
-    }
-    ProphetPipelineArtifacts {
-        uuid Id PK
-        uuid VersionId FK
-        string ArtifactType
-        jsonb ContentJson
-        string CreatedByAgent
-        datetime CreatedAtUtc
-    }
-    ProphetProjectFinalArtifacts {
-        uuid Id PK
-        uuid ProphetProjectId FK
-        string OriginalFileName
-        string ContentType
-        string StorageObjectPath
-        datetime CreatedAtUtc
-    }
-    ProphetProjects ||--o{ ProphetProjectInputDocuments : "ProphetProjectId"
-    ProphetProjects ||--o{ ProphetArtifactVersions : "ProphetProjectId"
-    ProphetArtifactVersions ||--o| ProphetArtifactVersions : "ParentVersionId"
-    ProphetArtifactVersions ||--o{ ProphetPipelineArtifacts : "VersionId"
-    ProphetProjects ||--o{ ProphetProjectFinalArtifacts : "ProphetProjectId"
-```
-
----
-
 ## Architecture notes
-
 - **No authentication** — all endpoints are open. This is by design for a local academic tool.
-- **Hexagonal architecture** — `Domain` has zero dependencies. `Application` depends only on `Domain`. Adapters (`LLM`, `Postgres`, `LocalStorage`) implement Application interfaces. `Prophet.Api` composes everything via DI.
-- **Local filesystem storage** — files are stored under `Storage:BasePath` and served directly by the API via `GET /v1/prophet/files/{*path}`. No Firebase, no S3, no cloud storage.
-- **Pipeline is resumable** — each step persists its output as a `ProphetPipelineArtifact` (JSONB in DB) or a file. Rewind, retry, and continue operations allow iterating on specific steps without rerunning the whole pipeline.
+- **Hexagonal architecture** — `Domain` has zero dependencies. `Application` depends only on `Domain`. Adapters (`LLM`, `InMemory`) implement Application interfaces. `Prophet.Api` composes everything via DI.
+- **In-memory storage** — all state (projects, files, pipeline artifacts) lives in `ConcurrentDictionary` singletons. State is lost on restart — by design for a local tool. Files are served via `GET /v1/prophet/files/{*path}`.
+- **Pipeline is resumable** — each step persists its output as a `ProphetPipelineArtifact`. Rewind, retry, and continue operations allow iterating on specific steps without rerunning the whole pipeline.
 - **Versioning with branching** — a "refine" creates a new `ProphetArtifactVersion` that copies parent outputs up to the re-entry step, then re-runs from that point forward with the change request in context.
 - **Multi-model** — the LLM adapter resolves `reasoning / structured / research` to independent provider + model combinations at runtime. Changing a model requires only a config update, not a code change.
