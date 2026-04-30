@@ -21,8 +21,8 @@ public sealed class UploadPipelineInputDocumentsUseCaseTests
     private readonly ValidationErrorCollector _errorCollector = new();
     private readonly IOptions<StorageOptions> _storageOptions = Options.Create(new StorageOptions
     {
-        Root = "genesis",
-        BucketName = "bucket",
+        Root = "prophet",
+        ApiBaseUrl = "https://localhost:7017",
     });
 
     private UploadPipelineInputDocumentsUseCase CreateSut() =>

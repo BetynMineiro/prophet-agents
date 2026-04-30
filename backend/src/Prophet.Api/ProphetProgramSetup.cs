@@ -57,23 +57,4 @@ internal static class ProphetProgramSetup
             });
         });
     }
-
-    internal static void EnsureRequiredConfiguration(WebApplication app)
-    {
-        var isTesting = string.Equals(app.Configuration["Testing:UseInMemoryDatabase"], "true", StringComparison.OrdinalIgnoreCase);
-        if (isTesting)
-            return;
-
-        var conn = ProphetConnectionStrings.GetPostgreSql(app.Configuration);
-        var isDev = app.Environment.IsDevelopment();
-
-        if (string.IsNullOrWhiteSpace(conn) && !isDev)
-            throw new InvalidOperationException(
-                "Set ConnectionStrings__postgresdb or ConnectionStrings__Default via environment or vault.");
-
-        if (isDev && string.IsNullOrWhiteSpace(conn))
-        {
-            app.Logger.LogWarning("Prophet: No connection string configured. Using in-memory database for development.");
-        }
-    }
 }

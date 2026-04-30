@@ -5,7 +5,7 @@ import {
   prophetPost,
   prophetPut,
 } from "@/lib/api/client"
-import type { ApiResult, CursorPage } from "@/lib/api/types"
+import type { ApiResult } from "@/lib/api/types"
 import { reportRequestError } from "@/lib/api/request-status/request-status"
 import { readProphetApiResultJson } from "@/lib/api/prophet/parse-prophet-result"
 import {
@@ -44,27 +44,17 @@ export type UpdateProphetProjectPayload = {
   isActive: boolean
 }
 
-export async function getProphetProjectsPage(params: {
-  pageSize: number
-  cursor: string | null
-  searchText: string | null
+export async function getProphetProjects(params?: {
+  searchText?: string | null
   activeState?: ActiveState
-}): Promise<CursorPage<ProphetProjectItemDto>> {
-  const {
-    pageSize,
-    cursor,
-    searchText,
-    activeState = ActiveStateValue.Active,
-  } = params
+}): Promise<ProphetProjectItemDto[]> {
+  const { searchText, activeState = ActiveStateValue.Active } = params ?? {}
   const q = new URLSearchParams()
-  q.set("pageSize", String(pageSize))
-  if (cursor) q.set("cursor", cursor)
   if (searchText) q.set("searchText", searchText)
   q.set("activeState", activeState)
 
   const res = await prophetGet(`/v1/prophet/projects?${q.toString()}`)
-  const json =
-    await readProphetApiResultJson<CursorPage<ProphetProjectItemDto>>(res)
+  const json = await readProphetApiResultJson<ProphetProjectItemDto[]>(res)
 
   if (!res.ok || !json.success || json.data == null) {
     const message =

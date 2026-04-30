@@ -3,7 +3,7 @@ import {
   createProphetProject,
   deleteProphetProject,
   getProphetProject,
-  getProphetProjectsPage,
+  getProphetProjects,
   refineProphetProject,
   restoreProphetProject,
   updateProphetProject,
@@ -50,28 +50,21 @@ describe("projects", () => {
     vi.clearAllMocks()
   })
 
-  it("getProphetProjectsPage builds query with cursor and searchText", async () => {
-    const page = {
-      items: [sampleProject],
-      nextCursor: null,
-      hasNext: false,
-    }
+  it("getProphetProjects builds query with searchText and activeState", async () => {
     prophetGetMock.mockResolvedValueOnce(
-      prophetTestJsonResponse({ success: true, data: page })
+      prophetTestJsonResponse({ success: true, data: [sampleProject] })
     )
 
-    const result = await getProphetProjectsPage({
-      pageSize: 20,
-      cursor: "abc",
+    const result = await getProphetProjects({
       searchText: "x",
       activeState: "All",
     })
     expect(prophetGetMock).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\/v1\/prophet\/projects\?pageSize=20&cursor=abc&searchText=x&activeState=All/
+        /\/v1\/prophet\/projects\?searchText=x&activeState=All/
       )
     )
-    expect(result).toEqual(page)
+    expect(result).toEqual([sampleProject])
   })
 
   it("getProphetProject returns data on success", async () => {

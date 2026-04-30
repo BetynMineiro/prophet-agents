@@ -7,7 +7,6 @@ using Prophet.CrossCutting.Validation;
 
 namespace Prophet.Api.Controllers.Pipeline;
 
-/// <summary>Pipeline projects. Bearer JWT issued by Abraham; same issuer, audience, and signing key as Prophet configuration.</summary>
 [ApiController]
 [Route("v1/prophet/projects")]
 [Produces("application/json")]
@@ -32,7 +31,6 @@ public class ProjectsController(
         return CreatedAtAction(nameof(Get), new { id = item.Id }, Result<PipelineProjectItemDto>.Ok(item));
     }
 
-    /// <summary>Update project name, description and expected date.</summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(Result<PipelineProjectItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Result<object>), StatusCodes.Status400BadRequest)]
@@ -48,28 +46,19 @@ public class ProjectsController(
         return Ok(Result<PipelineProjectItemDto>.Ok(item));
     }
 
-    /// <summary>List projects (cursor pagination). Query: pageSize (1–500), cursor, searchText, activeState (All|Active|Inactive).</summary>
+    /// <summary>List all projects. Query: searchText, activeState (All|Active|Inactive).</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(Result<CursorPage<PipelineProjectItemDto>>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Result<CursorPage<PipelineProjectItemDto>>>> List(
-        [FromQuery] int? pageSize,
-        [FromQuery] string? cursor,
+    [ProducesResponseType(typeof(Result<IReadOnlyList<PipelineProjectItemDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<Result<IReadOnlyList<PipelineProjectItemDto>>>> List(
         [FromQuery] string? searchText,
         [FromQuery] ActiveState activeState = ActiveState.All,
         CancellationToken cancellationToken = default)
     {
-        var size = pageSize is >= 1 and <= 500 ? pageSize.Value : 10;
-        if (!string.IsNullOrWhiteSpace(cursor) && !Guid.TryParse(cursor, out _))
-            return Ok(Result<CursorPage<PipelineProjectItemDto>>.Fail(["Cursor must be a valid GUID."]));
-        var request = new PagedRequest
-        {
-            PageSize = size,
-            Cursor = string.IsNullOrWhiteSpace(cursor) ? null : cursor.Trim(),
-            SearchText = string.IsNullOrWhiteSpace(searchText) ? null : searchText.Trim(),
-            ActiveState = activeState
-        };
-        var page = await listUseCase.ExecuteAsync(request, cancellationToken);
-        return Ok(Result<CursorPage<PipelineProjectItemDto>>.Ok(page));
+        var items = await listUseCase.ExecuteAsync(
+            string.IsNullOrWhiteSpace(searchText) ? null : searchText.Trim(),
+            activeState,
+            cancellationToken);
+        return Ok(Result<IReadOnlyList<PipelineProjectItemDto>>.Ok(items));
     }
 
     [HttpGet("{id:guid}")]
@@ -87,7 +76,6 @@ public class ProjectsController(
         return Ok(Result<PipelineProjectItemDto>.Ok(item));
     }
 
-    /// <summary>Restore a soft-deleted project (clears deletion timestamp).</summary>
     [HttpPatch("{id:guid}/restore")]
     [ProducesResponseType(typeof(Result<PipelineProjectItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Result<object>), StatusCodes.Status400BadRequest)]

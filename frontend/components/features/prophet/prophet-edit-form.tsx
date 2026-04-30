@@ -26,10 +26,7 @@ import {
   updateProphetProject,
   type UpdateProphetProjectPayload,
 } from "@/lib/api/prophet"
-import { ProphetProjectFinalArtifactsSection } from "@/components/features/prophet/prophet-project-final-artifacts-section"
-import { ProphetProjectHtmlPocsSection } from "@/components/features/prophet/prophet-project-html-pocs-section"
 import { ProphetPipelineTimelineSection } from "@/components/features/prophet/prophet-pipeline-timeline-section"
-import { ProphetRefineSection } from "@/components/features/prophet/prophet-refine-section"
 import { ProphetProjectInputsSection } from "@/components/features/prophet/prophet-project-inputs-section"
 import {
   Tabs,
@@ -215,13 +212,6 @@ export function ProphetEditForm({
           <TabsTrigger value="pipeline">
             {t("prophetEditTabPipeline")}
           </TabsTrigger>
-          <TabsTrigger value="refine">{t("prophetEditTabRefine")}</TabsTrigger>
-          <TabsTrigger value="artifacts">
-            {t("prophetEditTabFinalArtifacts")}
-          </TabsTrigger>
-          <TabsTrigger value="html-pocs">
-            {t("prophetEditTabHtmlPocs")}
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
@@ -319,18 +309,6 @@ export function ProphetEditForm({
 
         <TabsContent value="pipeline" className="space-y-4">
           <ProphetPipelineTimelineSection projectId={projectId} />
-        </TabsContent>
-
-        <TabsContent value="refine" className="space-y-4">
-          <ProphetRefineSection projectId={projectId} />
-        </TabsContent>
-
-        <TabsContent value="artifacts" className="space-y-4">
-          <ProphetProjectFinalArtifactsSection projectId={projectId} />
-        </TabsContent>
-
-        <TabsContent value="html-pocs" className="space-y-4">
-          <ProphetProjectHtmlPocsSection projectId={projectId} />
         </TabsContent>
       </Tabs>
 

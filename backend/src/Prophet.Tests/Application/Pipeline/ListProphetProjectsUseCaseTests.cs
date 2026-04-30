@@ -2,7 +2,6 @@ using Moq;
 using Prophet.Application.Interfaces.Pipeline;
 using Prophet.Application.UserCases.Pipeline.Projects;
 using Prophet.CrossCutting.RequestObjects;
-using Prophet.CrossCutting.ResultObjects;
 using Prophet.Domain.Entities.Pipeline;
 
 namespace Prophet.Tests.Application.Pipeline;
@@ -23,25 +22,28 @@ public class ListProphetProjectsUseCaseTests
         DeletedAtUtc = deleted ? DateTime.UtcNow : null
     };
 
+    private void SetupGetAll(IReadOnlyList<PipelineProject> projects)
+    {
+        _storeMock
+            .Setup(x => x.GetAllAsync(It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(projects);
+        _storeMock
+            .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
+    }
+
     [Fact]
     public async Task ExecuteAsync_ReturnsMappedItems_WithNoLatestPipeline()
     {
         var project = MakeProject("Alpha");
-        var page = new CursorPage<PipelineProject> { Items = [project], HasNext = false };
+        SetupGetAll([project]);
 
-        _storeMock
-            .Setup(x => x.GetPageAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
-        _storeMock
-            .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
+        var result = await CreateUseCase().ExecuteAsync(null, ActiveState.All);
 
-        var result = await CreateUseCase().ExecuteAsync(new PagedRequest());
-
-        Assert.Single(result.Items);
-        Assert.Equal("Alpha", result.Items[0].Name);
-        Assert.Null(result.Items[0].LatestArtifactVersionId);
-        Assert.Null(result.Items[0].LatestPipelineStatus);
+        Assert.Single(result);
+        Assert.Equal("Alpha", result[0].Name);
+        Assert.Null(result[0].LatestArtifactVersionId);
+        Assert.Null(result[0].LatestPipelineStatus);
     }
 
     [Fact]
@@ -49,11 +51,9 @@ public class ListProphetProjectsUseCaseTests
     {
         var project = MakeProject("Beta");
         var versionId = Guid.NewGuid();
-        var page = new CursorPage<PipelineProject> { Items = [project], HasNext = false };
-
         _storeMock
-            .Setup(x => x.GetPageAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
+            .Setup(x => x.GetAllAsync(It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([project]);
         _storeMock
             .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>
@@ -61,100 +61,38 @@ public class ListProphetProjectsUseCaseTests
                 [project.Id] = (versionId, PipelineRunStatus.Completed)
             });
 
-        var result = await CreateUseCase().ExecuteAsync(new PagedRequest());
+        var result = await CreateUseCase().ExecuteAsync(null, ActiveState.All);
 
-        Assert.Single(result.Items);
-        Assert.Equal(versionId, result.Items[0].LatestArtifactVersionId);
-        Assert.Equal("Completed", result.Items[0].LatestPipelineStatus);
+        Assert.Single(result);
+        Assert.Equal(versionId, result[0].LatestArtifactVersionId);
+        Assert.Equal("Completed", result[0].LatestPipelineStatus);
     }
 
     [Fact]
     public async Task ExecuteAsync_WhenDeletedProject_IsActiveIsFalse()
     {
         var project = MakeProject("Deleted", deleted: true);
-        var page = new CursorPage<PipelineProject> { Items = [project], HasNext = false };
+        SetupGetAll([project]);
 
-        _storeMock
-            .Setup(x => x.GetPageAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
-        _storeMock
-            .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
+        var result = await CreateUseCase().ExecuteAsync(null, ActiveState.All);
 
-        var result = await CreateUseCase().ExecuteAsync(new PagedRequest());
-
-        Assert.Single(result.Items);
-        Assert.False(result.Items[0].IsActive);
+        Assert.Single(result);
+        Assert.False(result[0].IsActive);
     }
 
     [Fact]
-    public async Task ExecuteAsync_ClampsPageSizeTo1_WhenRequestedZero()
+    public async Task ExecuteAsync_PassesSearchTextAndActiveStateToStore()
     {
-        var page = new CursorPage<PipelineProject> { Items = [] };
-
         _storeMock
-            .Setup(x => x.GetPageAsync(1, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
+            .Setup(x => x.GetAllAsync("search", ActiveState.Active, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
         _storeMock
             .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
 
-        await CreateUseCase().ExecuteAsync(new PagedRequest { PageSize = 0 });
+        await CreateUseCase().ExecuteAsync("search", ActiveState.Active);
 
-        _storeMock.Verify(x => x.GetPageAsync(1, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ClampsPageSizeTo500_WhenRequestedTooLarge()
-    {
-        var page = new CursorPage<PipelineProject> { Items = [] };
-
-        _storeMock
-            .Setup(x => x.GetPageAsync(500, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
-        _storeMock
-            .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
-
-        await CreateUseCase().ExecuteAsync(new PagedRequest { PageSize = 9999 });
-
-        _storeMock.Verify(x => x.GetPageAsync(500, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_PassesCursorAndSearchTextToStore()
-    {
-        var page = new CursorPage<PipelineProject> { Items = [] };
-        var request = new PagedRequest { PageSize = 10, Cursor = "cur-1", SearchText = "search", ActiveState = ActiveState.Active };
-
-        _storeMock
-            .Setup(x => x.GetPageAsync(10, "cur-1", "search", ActiveState.Active, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
-        _storeMock
-            .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
-
-        await CreateUseCase().ExecuteAsync(request);
-
-        _storeMock.Verify(x => x.GetPageAsync(10, "cur-1", "search", ActiveState.Active, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_PropagatesHasNextAndNextCursor()
-    {
-        var page = new CursorPage<PipelineProject> { Items = [], HasNext = true, NextCursor = "next-cursor" };
-
-        _storeMock
-            .Setup(x => x.GetPageAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
-        _storeMock
-            .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
-
-        var result = await CreateUseCase().ExecuteAsync(new PagedRequest());
-
-        Assert.True(result.HasNext);
-        Assert.Equal("next-cursor", result.NextCursor);
+        _storeMock.Verify(x => x.GetAllAsync("search", ActiveState.Active, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -162,19 +100,27 @@ public class ListProphetProjectsUseCaseTests
     {
         var p1 = MakeProject("P1");
         var p2 = MakeProject("P2");
-        var page = new CursorPage<PipelineProject> { Items = [p1, p2] };
-
         _storeMock
-            .Setup(x => x.GetPageAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(page);
+            .Setup(x => x.GetAllAsync(It.IsAny<string?>(), It.IsAny<ActiveState>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([p1, p2]);
         _storeMock
             .Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
 
-        await CreateUseCase().ExecuteAsync(new PagedRequest());
+        await CreateUseCase().ExecuteAsync(null, ActiveState.All);
 
         _storeMock.Verify(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(
             It.Is<IReadOnlyList<Guid>>(ids => ids.Contains(p1.Id) && ids.Contains(p2.Id) && ids.Count == 2),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ReturnsEmptyList_WhenNoProjects()
+    {
+        SetupGetAll([]);
+
+        var result = await CreateUseCase().ExecuteAsync(null, ActiveState.All);
+
+        Assert.Empty(result);
     }
 }

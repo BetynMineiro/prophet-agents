@@ -56,9 +56,8 @@ public class ProjectsE2ETests : IClassFixture<ProphetWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetProjects_Returns200_WithPaginatedList()
+    public async Task GetProjects_Returns200_WithFlatList()
     {
-        // Create at least one project so list is non-empty
         await _client.PostAsJsonAsync("/v1/prophet/projects", CreateProjectBody("List Test Project"));
 
         var response = await _client.GetAsync("/v1/prophet/projects");
@@ -71,8 +70,8 @@ public class ProjectsE2ETests : IClassFixture<ProphetWebApplicationFactory>
 
         Assert.True(root.GetProperty("success").GetBoolean());
         var data = root.GetProperty("data");
-        Assert.True(data.TryGetProperty("items", out _));
-        Assert.True(data.TryGetProperty("hasNext", out _));
+        Assert.Equal(JsonValueKind.Array, data.ValueKind);
+        Assert.True(data.GetArrayLength() >= 1);
     }
 
     [Fact]

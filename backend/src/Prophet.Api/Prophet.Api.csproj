@@ -5,14 +5,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Prophet.Application\Prophet.Application.csproj" />
     <ProjectReference Include="..\Prophet.Adapters.LLM\Prophet.Adapters.LLM.csproj" />
-    <ProjectReference Include="..\Prophet.Adapters.LocalStorage\Prophet.Adapters.LocalStorage.csproj" />
-    <ProjectReference Include="..\Prophet.Adapters.Postgres\Prophet.Adapters.Postgres.csproj" />
+    <ProjectReference Include="..\Prophet.Adapters.InMemory\Prophet.Adapters.InMemory.csproj" />
     <ProjectReference Include="..\Prophet.CrossCutting\Prophet.CrossCutting.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 </Project>

@@ -8,8 +8,7 @@
   </Folder>
   <Folder Name="/3-Adapters/">
     <Project Path="src/Prophet.Adapters.LLM/Prophet.Adapters.LLM.csproj" />
-    <Project Path="src/Prophet.Adapters.LocalStorage/Prophet.Adapters.LocalStorage.csproj" />
-    <Project Path="src/Prophet.Adapters.Postgres/Prophet.Adapters.Postgres.csproj" />
+    <Project Path="src/Prophet.Adapters.InMemory/Prophet.Adapters.InMemory.csproj" />
   </Folder>
   <Folder Name="/4-Common/">
     <Project Path="src/Prophet.CrossCutting/Prophet.CrossCutting.csproj" />

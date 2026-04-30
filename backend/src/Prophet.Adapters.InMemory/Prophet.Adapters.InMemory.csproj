@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Prophet.Adapters.InMemory</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Prophet.Application\Prophet.Application.csproj" />
+  </ItemGroup>
+</Project>

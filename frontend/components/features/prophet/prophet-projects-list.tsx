@@ -1,10 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import {
   deleteProphetProject,
-  getProphetProjectsPage,
+  getProphetProjects,
   restoreProphetProject,
   type ProphetProjectItemDto,
 } from "@/lib/api/prophet"
@@ -29,7 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table/table"
-import { DashboardListPagination } from "../shared/list-pagination"
 import { DashboardListToolbar } from "../shared/list-toolbar"
 import { ConfirmDeleteAction } from "../shared/confirm-delete-action"
 import { toast } from "sonner"
@@ -48,7 +47,6 @@ function formatCreatedAt(iso: string, locale: string): string {
   }
 }
 
-/** `isoDate` is `YYYY-MM-DD` from the API */
 function formatExpectedDate(isoDate: string | null, locale: string): string {
   if (!isoDate) return "—"
   try {
@@ -66,81 +64,54 @@ export function ProphetProjectsList() {
   const t = useTranslations("dashboard")
   const router = useRouter()
   const locale = useLocale()
-  const pageSize = 10
-  const [cursor, setCursor] = useState<string | null>(null)
   const [items, setItems] = useState<ProphetProjectItemDto[]>([])
-  const [hasNext, setHasNext] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [restoringId, setRestoringId] = useState<string | null>(null)
 
   const [searchText, setSearchText] = useState("")
   const debouncedSearch = useDebouncedValue(searchText, 400)
-  const effectiveSearch = useMemo(
-    () => normalizeSearchText(debouncedSearch, 200, true),
-    [debouncedSearch]
-  )
-  const searchTextFilter = effectiveSearch || null
+  const searchTextFilter =
+    normalizeSearchText(debouncedSearch, 200, true) || null
 
   const [activeState, setActiveState] = useState<ActiveState>(
     ActiveStateValue.Active
   )
 
-  const fetchPage = useCallback(
-    async (opts: {
-      cursor: string | null
-      resetItems: boolean
-      /** Background refresh (e.g. pipeline polling): do not toggle list loading or pagination spinner. */
-      silent?: boolean
-    }) => {
-      const silent = opts.silent === true
+  const fetchItems = useCallback(
+    async (silent = false) => {
       if (!silent) setLoading(true)
       try {
-        const page = await getProphetProjectsPage({
+        const data = await getProphetProjects({
           activeState,
-          pageSize,
-          cursor: opts.cursor,
           searchText: searchTextFilter,
         })
-        setHasNext(page.hasNext)
-        setItems((prev) =>
-          opts.resetItems ? page.items : [...prev, ...page.items]
-        )
-        setCursor(page.nextCursor)
+        setItems(data)
       } catch {
         if (!silent) toast.error(t("requestFailed"))
       } finally {
         if (!silent) setLoading(false)
       }
     },
-    [activeState, pageSize, searchTextFilter, t]
+    [activeState, searchTextFilter, t]
   )
 
   useEffect(() => {
-    void Promise.resolve().then(() =>
-      fetchPage({ cursor: null, resetItems: true }).catch(() => {})
-    )
-  }, [fetchPage])
+    void Promise.resolve().then(() => fetchItems().catch(() => {}))
+  }, [fetchItems])
 
-  const fetchPageRef = useRef(fetchPage)
+  const fetchItemsRef = useRef(fetchItems)
   useEffect(() => {
-    fetchPageRef.current = fetchPage
-  }, [fetchPage])
+    fetchItemsRef.current = fetchItems
+  }, [fetchItems])
 
-  /** While at least one visible row is Running, refresh the list so the correct line keeps the spinner. */
   useEffect(() => {
     const hasRunning = items.some(
       (row) => row.latestPipelineStatus?.trim().toLowerCase() === "running"
     )
     if (!hasRunning) return
     const id = window.setInterval(() => {
-      fetchPageRef
-        .current({
-          cursor: null,
-          resetItems: true,
-          silent: true,
-        })
-        .catch(() => {})
+      fetchItemsRef.current(true).catch(() => {})
     }, 4500)
     return () => window.clearInterval(id)
   }, [items])
@@ -150,7 +121,7 @@ export function ProphetProjectsList() {
       setRestoringId(id)
       try {
         await restoreProphetProject(id)
-        await fetchPage({ cursor: null, resetItems: true })
+        await fetchItems()
         toast.success(t("prophetRestoreSuccess"))
       } catch {
         toast.error(t("prophetRestoreFailed"))
@@ -158,7 +129,7 @@ export function ProphetProjectsList() {
         setRestoringId(null)
       }
     },
-    [fetchPage, t]
+    [fetchItems, t]
   )
 
   const handleDelete = useCallback(
@@ -167,7 +138,7 @@ export function ProphetProjectsList() {
       try {
         const result = await deleteProphetProject(id)
         if (result.success) {
-          await fetchPage({ cursor: null, resetItems: true })
+          await fetchItems()
           toast.success(t("prophetDeleteSuccess"))
         } else {
           toast.error(t("prophetDeleteFailed"))
@@ -178,7 +149,7 @@ export function ProphetProjectsList() {
         setDeletingId(null)
       }
     },
-    [fetchPage, t]
+    [fetchItems, t]
   )
 
   return (
@@ -328,19 +299,6 @@ export function ProphetProjectsList() {
           </TableBody>
         </Table>
       </div>
-
-      <DashboardListPagination
-        hasNext={hasNext}
-        loading={loading}
-        cursor={cursor}
-        onNext={(nextCursor) => {
-          fetchPage({ cursor: nextCursor, resetItems: false }).catch(() => {})
-        }}
-        previousLabel={t("paginationPreviousLabel")}
-        nextLabel={t("paginationNextLabel")}
-        moreResultsLabel={t("paginationMoreResultsAvailable")}
-        endOfResultsLabel={t("paginationEndOfResults")}
-      />
     </div>
   )
 }
