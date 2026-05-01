@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { FormSubmitEvent } from "@/lib/types/form-submit-event"
-import { useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useRouter } from "@/i18n/navigation"
 import {
   getProphetProject,
   updateProphetProject,
@@ -45,7 +44,6 @@ type InitialSnapshot = {
 export function ProphetEditForm({
   projectId,
 }: Readonly<{ projectId: string }>) {
-  const t = useTranslations("dashboard")
   const router = useRouter()
 
   const [name, setName] = useState("")
@@ -101,7 +99,7 @@ export function ProphetEditForm({
         if (cancelled) return
         setLoadState("error")
         setLoadError(
-          e instanceof Error ? e.message : t("prophetEditLoadFailed")
+          e instanceof Error ? e.message : "Could not load project."
         )
       }
     })()
@@ -109,7 +107,7 @@ export function ProphetEditForm({
     return () => {
       cancelled = true
     }
-  }, [applyLoaded, projectId, t])
+  }, [applyLoaded, projectId])
 
   function isDirty(): boolean {
     const i = initialRef.current
@@ -134,7 +132,7 @@ export function ProphetEditForm({
     e.preventDefault()
     const normalizedName = name.trim()
     if (!normalizedName) {
-      toast.error(t("prophetCreateValidationName"))
+      toast.error("Name is required.")
       return
     }
     const descTrimmed = description.trim()
@@ -157,10 +155,10 @@ export function ProphetEditForm({
         expectedDate: (payload.expectedDate ?? "").trim(),
         isActive: payload.isActive,
       }
-      toast.success(t("prophetEditSuccess"))
+      toast.success("Project updated.")
       router.push("/prophet")
     } catch {
-      toast.error(t("prophetEditFailed"))
+      toast.error("Could not update project.")
     } finally {
       setIsSubmitting(false)
     }
@@ -178,7 +176,7 @@ export function ProphetEditForm({
     return (
       <div className="text-muted-foreground flex items-center gap-2 py-8 text-sm">
         <Loader2Icon className="size-4 animate-spin" aria-hidden />
-        {t("tableLoading")}
+        Loading...
       </div>
     )
   }
@@ -192,7 +190,7 @@ export function ProphetEditForm({
           variant="outline"
           onClick={() => router.push("/prophet")}
         >
-          {t("prophetEditBackToList")}
+          Back to list
         </Button>
       </div>
     )
@@ -205,26 +203,20 @@ export function ProphetEditForm({
           variant="line"
           className="mb-6 flex h-auto min-h-10 w-full flex-wrap gap-1"
         >
-          <TabsTrigger value="details">
-            {t("prophetEditTabDetails")}
-          </TabsTrigger>
-          <TabsTrigger value="inputs">{t("prophetEditTabInputs")}</TabsTrigger>
-          <TabsTrigger value="pipeline">
-            {t("prophetEditTabPipeline")}
-          </TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="inputs">Input documents</TabsTrigger>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
           <form onSubmit={onSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="prophet-edit-name">
-                {t("prophetCreateName")}
-              </Label>
+              <Label htmlFor="prophet-edit-name">Name</Label>
               <Input
                 id="prophet-edit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t("prophetCreateNamePlaceholder")}
+                placeholder="Project name"
                 maxLength={256}
                 required
                 disabled={isSubmitting}
@@ -233,14 +225,12 @@ export function ProphetEditForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="prophet-edit-description">
-                {t("prophetCreateDescriptionLabel")}
-              </Label>
+              <Label htmlFor="prophet-edit-description">Description</Label>
               <Textarea
                 id="prophet-edit-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("prophetCreateDescriptionPlaceholder")}
+                placeholder="Optional"
                 maxLength={4096}
                 disabled={isSubmitting}
                 rows={4}
@@ -248,9 +238,7 @@ export function ProphetEditForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="prophet-edit-expected">
-                {t("prophetExpectedDateLabel")}
-              </Label>
+              <Label htmlFor="prophet-edit-expected">Expected date</Label>
               <Input
                 id="prophet-edit-expected"
                 type="date"
@@ -262,11 +250,9 @@ export function ProphetEditForm({
 
             <div className="flex items-center justify-between rounded-md border p-3">
               <div className="space-y-1">
-                <Label htmlFor="prophet-edit-active">
-                  {t("prophetCreateActiveLabel")}
-                </Label>
+                <Label htmlFor="prophet-edit-active">Active</Label>
                 <p className="text-muted-foreground text-sm">
-                  {t("prophetCreateActiveHint")}
+                  Inactive projects are hidden from the default list until reactivated.
                 </p>
               </div>
               <Switch
@@ -284,7 +270,7 @@ export function ProphetEditForm({
                 onClick={requestCancel}
                 disabled={isSubmitting}
               >
-                {t("prophetCreateCancel")}
+                Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
@@ -293,10 +279,10 @@ export function ProphetEditForm({
                       className="mr-2 size-4 animate-spin"
                       aria-hidden
                     />
-                    {t("prophetEditSaving")}
+                    Saving…
                   </>
                 ) : (
-                  t("prophetEditSave")
+                  "Save changes"
                 )}
               </Button>
             </div>
@@ -315,23 +301,21 @@ export function ProphetEditForm({
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("prophetCancelConfirmTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("prophetCancelConfirmDescription")}
+              Any information you entered will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>
-              {t("prophetCancelConfirmStay")}
+              Keep editing
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={isSubmitting}
               onClick={() => router.push("/prophet")}
             >
-              {t("prophetCancelConfirmLeave")}
+              Leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -340,11 +324,9 @@ export function ProphetEditForm({
       <AlertDialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("prophetEditSubmitConfirmTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Save changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("prophetEditSubmitConfirmDescription")}
+              The project will be updated with the values you entered.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -354,13 +336,13 @@ export function ProphetEditForm({
                 pendingSubmitRef.current = null
               }}
             >
-              {t("prophetEditSubmitConfirmBack")}
+              Back
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={isSubmitting}
               onClick={() => confirmUpdate()}
             >
-              {t("prophetEditSubmitConfirmAction")}
+              Yes, save
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Options;
 using Moq;
-using Prophet.Application.Interfaces;
 using Prophet.Application.Interfaces.Pipeline;
 using Prophet.Application.Interfaces.Storage;
 using Prophet.Application.Options;
@@ -16,7 +15,6 @@ public sealed class UploadPipelineInputDocumentsUseCaseTests
     private readonly Mock<IPipelineProjectStore> _projectStore = new();
     private readonly Mock<IPipelineInputDocumentStore> _documentStore = new();
     private readonly Mock<IStorageService> _storage = new();
-    private readonly Mock<ICurrentUserContext> _currentUser = new();
     private readonly UploadPipelineInputDocumentsRequestValidator _validator = new();
     private readonly ValidationErrorCollector _errorCollector = new();
     private readonly IOptions<StorageOptions> _storageOptions = Options.Create(new StorageOptions
@@ -72,7 +70,6 @@ public sealed class UploadPipelineInputDocumentsUseCaseTests
         var projectId = Guid.NewGuid();
         _projectStore.Setup(x => x.GetByIdAsync(projectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PipelineProject { Id = projectId, Name = "P" });
-        _currentUser.Setup(x => x.UserId).Returns(Guid.NewGuid());
         var sut = CreateSut();
 
         var result = await sut.ExecuteAsync(
@@ -96,7 +93,6 @@ public sealed class UploadPipelineInputDocumentsUseCaseTests
         var projectId = Guid.NewGuid();
         _projectStore.Setup(x => x.GetByIdAsync(projectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PipelineProject { Id = projectId, Name = "P" });
-        _currentUser.Setup(x => x.UserId).Returns(Guid.NewGuid());
         var sut = CreateSut();
 
         var result = await sut.ExecuteAsync(
@@ -121,7 +117,6 @@ public sealed class UploadPipelineInputDocumentsUseCaseTests
         var userId = Guid.NewGuid();
         _projectStore.Setup(x => x.GetByIdAsync(projectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PipelineProject { Id = projectId, Name = "P" });
-        _currentUser.Setup(x => x.UserId).Returns(userId);
         _storage.Setup(x => x.UploadAsync(
                 "genesis",
                 "prophet",

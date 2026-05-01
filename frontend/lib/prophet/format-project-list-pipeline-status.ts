@@ -2,24 +2,23 @@
  * Labels the pipeline run state for the Prophet projects table (Genesis API strings: Idle, Running, …).
  */
 export function formatProphetProjectListPipelineStatus(
-  status: string | null | undefined,
-  t: (key: string) => string
+  status: string | null | undefined
 ): string {
   if (status == null || status.trim() === "") {
-    return t("prophetProjectListPipelineNone")
+    return "—"
   }
   const low = status.trim().toLowerCase()
   switch (low) {
     case "idle":
-      return t("prophetProjectListPipelineStatus_idle")
+      return "Idle"
     case "running":
-      return t("prophetProjectListPipelineStatus_running")
+      return "Running"
     case "completed":
-      return t("prophetProjectListPipelineStatus_completed")
+      return "Completed"
     case "failed":
-      return t("prophetProjectListPipelineStatus_failed")
+      return "Failed"
     case "paused":
-      return t("prophetProjectListPipelineStatus_paused")
+      return "Paused"
     default:
       return status.trim()
   }

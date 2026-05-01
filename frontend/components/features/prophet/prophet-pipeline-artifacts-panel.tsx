@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { Loader2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -41,7 +40,6 @@ export function ProphetPipelineArtifactsPanel({
   versionId: string | null
   enabled: boolean
 }>) {
-  const t = useTranslations("dashboard")
   const [items, setItems] = useState<ProphetPipelineArtifactDto[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [jsonOpen, setJsonOpen] = useState(false)
@@ -55,12 +53,12 @@ export function ProphetPipelineArtifactsPanel({
       const list = await listProphetPipelineArtifacts(projectId, versionId)
       setItems(list)
     } catch {
-      toast.error(t("prophetPipelineArtifactsLoadFailed"))
+      toast.error("Could not load artifacts.")
       setItems([])
     } finally {
       setLoading(false)
     }
-  }, [projectId, versionId, t])
+  }, [projectId, versionId])
 
   useEffect(() => {
     void (async () => {
@@ -89,11 +87,9 @@ export function ProphetPipelineArtifactsPanel({
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-base">
-                {t("prophetPipelineArtifactsPanelTitle")}
-              </CardTitle>
+              <CardTitle className="text-base">JSON artifacts</CardTitle>
               <CardDescription>
-                {t("prophetPipelineArtifactsPanelDescription")}
+                All JSONB artifacts stored for this artifact version (generic viewer).
               </CardDescription>
             </div>
             <Button
@@ -109,10 +105,10 @@ export function ProphetPipelineArtifactsPanel({
                     className="mr-2 size-4 shrink-0 animate-spin"
                     aria-hidden
                   />
-                  {t("prophetPipelineArtifactsRefreshing")}
+                  Loading…
                 </>
               ) : (
-                t("prophetPipelineArtifactsRefresh")
+                "Refresh list"
               )}
             </Button>
           </div>
@@ -121,22 +117,18 @@ export function ProphetPipelineArtifactsPanel({
           {loading && items == null ? (
             <div className="text-muted-foreground flex items-center gap-2 py-6 text-sm">
               <Loader2Icon className="size-4 animate-spin" aria-hidden />
-              {t("prophetPipelineArtifactsLoading")}
+              Loading artifacts…
             </div>
           ) : items != null && items.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              {t("prophetPipelineArtifactsEmpty")}
+              No JSON artifacts for this version yet.
             </p>
           ) : items != null ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>
-                    {t("prophetPipelineArtifactsColumnType")}
-                  </TableHead>
-                  <TableHead className="w-[120px] text-right">
-                    {t("prophetPipelineArtifactsColumnActions")}
-                  </TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="w-[120px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -154,7 +146,7 @@ export function ProphetPipelineArtifactsPanel({
                           openJson(row.artifactType, row.contentJson)
                         }
                       >
-                        {t("prophetPipelineArtifactsViewJson")}
+                        View JSON
                       </Button>
                     </TableCell>
                   </TableRow>

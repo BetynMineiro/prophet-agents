@@ -9,7 +9,6 @@ import {
   useRef,
   useState,
 } from "react"
-import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { DownloadIcon, Loader2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -66,10 +65,30 @@ import {
 } from "@/components/features/prophet/pipeline-timeline/pipeline-timeline-row"
 import { ProphetPipelineArtifactsPanel } from "@/components/features/prophet/prophet-pipeline-artifacts-panel"
 
+const STEP_LABELS: Record<string, string> = {
+  file: "File",
+  insight: "Insight",
+  market: "Market",
+  model: "Model",
+  architecture: "Architecture",
+  diagram: "Diagram",
+  "poc-web": "Web POC",
+  "poc-mobile": "Mobile POC",
+  doc: "Documentation",
+  packaging: "Packaging",
+}
+
+const STEP_STATUS_LABELS: Record<string, string> = {
+  completed: "Completed",
+  running: "Running",
+  pending: "Pending",
+  waiting: "Waiting",
+  failed: "Failed",
+}
+
 export function ProphetPipelineTimelineSection({
   projectId,
 }: Readonly<{ projectId: string }>) {
-  const t = useTranslations("dashboard")
   const [apiLoadState, setApiLoadState] = useState<
     "idle" | "loading" | "ready" | "error" | "empty"
   >("idle")
@@ -135,9 +154,9 @@ export function ProphetPipelineTimelineSection({
       setApiLoadState("ready")
     } catch {
       setApiLoadState("error")
-      toast.error(t("prophetPipelineApiLoadError"))
+      toast.error("Could not load pipeline status.")
     }
-  }, [projectId, t])
+  }, [projectId])
 
   const refreshLiveStatus = useCallback(async () => {
     if (!liveVersionId) return
@@ -201,11 +220,11 @@ export function ProphetPipelineTimelineSection({
   }, [timelineData, columns])
 
   function stepLabel(stepId: string): string {
-    return t(`prophetPipelineSteps.${stepId}` as never)
+    return STEP_LABELS[stepId] ?? stepId
   }
 
   function stepStatusLabel(status: PipelineStepUiStatus): string {
-    return t(`prophetPipelineStepStatus_${status}`)
+    return STEP_STATUS_LABELS[status] ?? status
   }
 
   function canOpenStepPreview(
@@ -280,7 +299,7 @@ export function ProphetPipelineTimelineSection({
           }
         }
       } catch {
-        toast.error(t("prophetPipelinePreviewError"))
+        toast.error("Could not load this step's preview.")
         setPreviewOpen(false)
         setPreviewStepIndex(null)
       } finally {
@@ -296,20 +315,20 @@ export function ProphetPipelineTimelineSection({
       try {
         await continueProphetPipeline(projectId, liveVersionId)
         if (!options?.silent) {
-          toast.success(t("prophetPipelineContinueOk"))
+          toast.success("Continued to the next step.")
         }
         await refreshLiveStatus()
       } catch (e) {
         if (!options?.silent) {
           toast.error(
-            e instanceof Error ? e.message : t("prophetPipelineContinueFailed")
+            e instanceof Error ? e.message : "Continue failed."
           )
         }
       } finally {
         setPipelineActionBusy(false)
       }
     },
-    [liveVersionId, projectId, t, refreshLiveStatus]
+    [liveVersionId, projectId, refreshLiveStatus]
   )
 
   /** When Interactive is on and the server leaves the pipeline `Paused`, call Continue automatically until Completed / Failed — except at steps marked "pause for review". */
@@ -345,11 +364,11 @@ export function ProphetPipelineTimelineSection({
     setPipelineActionBusy(true)
     try {
       await retryProphetPipelineStep(projectId, liveVersionId, stepIndex)
-      toast.success(t("prophetPipelineRetryOk", { step: stepIndex }))
+      toast.success(`Retry started for step ${stepIndex}.`)
       await refreshLiveStatus()
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : t("prophetPipelineRetryFailed")
+        e instanceof Error ? e.message : "Retry failed."
       )
     } finally {
       setPipelineActionBusy(false)
@@ -361,11 +380,11 @@ export function ProphetPipelineTimelineSection({
     setPipelineActionBusy(true)
     try {
       await rewindProphetPipelineToStep(projectId, liveVersionId, stepIndex)
-      toast.success(t("prophetPipelineRewindOk", { step: stepIndex }))
+      toast.success(`Rewound to step ${stepIndex}.`)
       await refreshLiveStatus()
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : t("prophetPipelineRewindFailed")
+        e instanceof Error ? e.message : "Rewind failed."
       )
     } finally {
       setPipelineActionBusy(false)
@@ -379,11 +398,11 @@ export function ProphetPipelineTimelineSection({
       await runProphetPipeline(projectId, liveVersionId, {
         interactiveSteps: runInteractive,
       })
-      toast.success(t("prophetPipelineRunOk"))
+      toast.success("Pipeline run finished.")
       await refreshLiveStatus()
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : t("prophetPipelineRunFailed")
+        e instanceof Error ? e.message : "Pipeline run failed."
       )
     } finally {
       setPipelineActionBusy(false)
@@ -417,14 +436,14 @@ export function ProphetPipelineTimelineSection({
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground text-sm">
-        {t("prophetPipelineDescription")}
+        Interactive pipeline: preview step states and actions before wiring the live API.
       </p>
 
       <div
         className="rounded-md border border-dashed border-sky-600/35 bg-sky-500/5 px-3 py-2 text-sm text-sky-950 dark:text-sky-50/90"
         role="status"
       >
-        {t("prophetPipelineApiBanner")}
+        Live API — status of the project&apos;s latest artifact version. Preview for completed steps reads that version&apos;s artifacts and files.
       </div>
 
       <div className="flex flex-col gap-4">
@@ -443,10 +462,10 @@ export function ProphetPipelineTimelineSection({
                     className="mr-2 size-4 shrink-0 animate-spin"
                     aria-hidden
                   />
-                  {t("prophetPipelineRefreshStatusLoading")}
+                  Loading…
                 </>
               ) : (
-                t("prophetPipelineRefreshStatus")
+                "Refresh status"
               )}
             </Button>
           </div>
@@ -456,7 +475,7 @@ export function ProphetPipelineTimelineSection({
           <div
             className="border-border/70 bg-muted/20 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:flex-wrap sm:items-center"
             role="region"
-            aria-label={t("prophetPipelineLiveActionsAria")}
+            aria-label="Live pipeline controls"
           >
             <Button
               type="button"
@@ -471,7 +490,7 @@ export function ProphetPipelineTimelineSection({
                   aria-hidden
                 />
               ) : null}
-              {t("prophetPipelineRun")}
+              Run pipeline
             </Button>
             <div className="flex items-center gap-2">
               <Switch
@@ -484,7 +503,7 @@ export function ProphetPipelineTimelineSection({
                 htmlFor="prophet-pipeline-interactive"
                 className="text-sm font-normal"
               >
-                {t("prophetPipelineRunInteractive")}
+                Interactive (auto-continue each step)
               </Label>
             </div>
             <Button
@@ -494,10 +513,10 @@ export function ProphetPipelineTimelineSection({
               disabled={continueDisabled}
               onClick={() => void continuePipeline()}
             >
-              {t("prophetPipelineContinue")}
+              Continue
             </Button>
             <p className="text-muted-foreground w-full text-xs sm:w-auto sm:flex-1">
-              {t("prophetPipelineLiveActionsHint")}
+              Run pipeline: restarts from step 1 when status is Idle, Failed, or Completed (clears prior outputs). Interactive: after each step the client calls Continue automatically until the run finishes (toggle anytime except while Running). With Interactive on, use &quot;Pause for review&quot; on steps where you want to stop for manual Continue, Retry, or Rewind; after Continue, auto-continue runs again until the next pause or completion. When Paused with Interactive off, use Continue manually. Rewind here is also available when Completed — the pipeline becomes Paused at that step. Add source files under the project Inputs tab.
             </p>
           </div>
         ) : null}
@@ -505,11 +524,9 @@ export function ProphetPipelineTimelineSection({
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">
-            {t("prophetPipelineSummaryTitle")}
-          </CardTitle>
+          <CardTitle className="text-base">Pipeline status</CardTitle>
           <CardDescription>
-            {t("prophetPipelineVersionId")}:{" "}
+            Version:{" "}
             <span className="font-mono text-xs">
               {timelineData?.versionId ?? "—"}
             </span>
@@ -522,29 +539,27 @@ export function ProphetPipelineTimelineSection({
                 className="size-5 shrink-0 animate-spin"
                 aria-hidden
               />
-              {t("prophetPipelineRefreshStatusLoading")}
+              Loading…
             </div>
           ) : apiLoadState === "empty" ? (
             <p className="text-muted-foreground text-sm">
-              {t("prophetPipelineNoVersions")}
+              This project has no artifact versions yet.
             </p>
           ) : timelineData == null ? (
             <p className="text-muted-foreground text-sm">
-              {t("prophetPipelineApiLoadError")}
+              Could not load pipeline status.
             </p>
           ) : timelineData != null ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-muted-foreground text-sm">
-                  {t("prophetPipelineStatus")}:
-                </span>
+                <span className="text-muted-foreground text-sm">Status:</span>
                 <Badge
                   variant={statusBadgeVariant(timelineData.pipelineStatus)}
                 >
                   {timelineData.pipelineStatus}
                 </Badge>
                 <span className="text-muted-foreground text-sm">
-                  · {t("prophetPipelineCurrentStep")}:{" "}
+                  · Step:{" "}
                   {timelineData.currentStepIndex} / {timelineData.totalSteps}
                 </span>
               </div>
@@ -556,19 +571,19 @@ export function ProphetPipelineTimelineSection({
 
               <div className="space-y-2">
                 <p className="text-muted-foreground text-xs">
-                  {t("prophetPipelineDiagramHint")}
+                  Columns adjust to the available width (minimum card size). On very narrow screens you may scroll a row sideways. With API data source, per-step Retry/Rewind call Prophet; with Mock, they show toasts only.
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {t("prophetPipelinePreviewHint")}
+                  Intermediate output can only be previewed when the step completed successfully.
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {t("prophetPipelineActionsHint")}
+                  Run again re-executes that step immediately (Paused, Failed, or Completed). Rewind here only moves the pointer to that step and leaves the pipeline Paused — then use Continue or Run pipeline as needed.
                 </p>
                 <div
                   ref={diagramRef}
                   className="border-border/80 from-muted/30 to-muted/10 dark:from-muted/20 dark:to-muted/5 relative min-w-0 rounded-xl border bg-gradient-to-b p-4"
                   role="region"
-                  aria-label={t("prophetPipelineDiagramAria")}
+                  aria-label="Pipeline flow diagram"
                 >
                   <div className="flex flex-col gap-3">
                     {pipelineRows.map((row, ri) => (
@@ -582,15 +597,13 @@ export function ProphetPipelineTimelineSection({
                           onRetry={onRetry}
                           onRewind={onRewind}
                           onPreviewStep={openStepPreview}
-                          previewLabel={t("prophetPipelinePreview")}
-                          previewHelpTitle={t(
-                            "prophetPipelinePreviewHelpTitle"
-                          )}
+                          previewLabel="Preview output"
+                          previewHelpTitle="Only available for successfully completed steps."
                           canOpenPreview={canOpenStepPreview}
-                          retryLabel={t("prophetPipelineRetryStep")}
-                          rewindLabel={t("prophetPipelineRewindToStep")}
-                          retryHelpTitle={t("prophetPipelineRetryStepTitle")}
-                          rewindHelpTitle={t("prophetPipelineRewindStepTitle")}
+                          retryLabel="Run again"
+                          rewindLabel="Rewind here"
+                          retryHelpTitle="Clears this step's output and runs it immediately (POST …/steps/retry)."
+                          rewindHelpTitle="Moves the pipeline to this step and stays paused until you press Continue (POST …/steps/rewind)."
                           interactiveActionsDisabled={
                             interactiveActionsDisabled
                           }
@@ -601,12 +614,8 @@ export function ProphetPipelineTimelineSection({
                           onToggleAutoContinueBreakpoint={
                             toggleAutoContinuePauseAtStep
                           }
-                          autoContinueBreakpointLabel={t(
-                            "prophetPipelineBreakpointPause"
-                          )}
-                          autoContinueBreakpointTitle={t(
-                            "prophetPipelineBreakpointPauseTitle"
-                          )}
+                          autoContinueBreakpointLabel="Pause for review"
+                          autoContinueBreakpointTitle="While Interactive is on, stop auto-continue before this step runs so you can inspect output or use Retry/Rewind. Press Continue to resume auto-continue until the next pause or the end."
                         />
                         {ri < pipelineRows.length - 1 ? (
                           <RowVerticalBridge />
@@ -648,10 +657,8 @@ export function ProphetPipelineTimelineSection({
             <div className="flex flex-wrap items-center justify-between gap-3 pr-10">
               <DialogTitle className="text-start">
                 {previewStepIndex != null && previewStepLabel.length > 0
-                  ? t("prophetPipelinePreviewTitle", {
-                      step: previewStepLabel,
-                    })
-                  : t("prophetPipelinePreview")}
+                  ? `Step output: ${previewStepLabel}`
+                  : "Preview output"}
               </DialogTitle>
               {!previewLoading &&
               (previewMarkdown != null || previewEmbed != null) ? (
@@ -663,7 +670,7 @@ export function ProphetPipelineTimelineSection({
                   onClick={() => downloadStepPreview()}
                 >
                   <DownloadIcon className="mr-2 size-4 shrink-0" aria-hidden />
-                  {t("prophetPipelinePreviewDownload")}
+                  Download result
                 </Button>
               ) : null}
             </div>
@@ -675,7 +682,7 @@ export function ProphetPipelineTimelineSection({
                   className="size-5 shrink-0 animate-spin"
                   aria-hidden
                 />
-                {t("prophetPipelinePreviewLoading")}
+                Loading content…
               </div>
             ) : previewEmbed != null ? (
               <div className="flex h-[min(70vh,720px)] w-full min-w-0 flex-col gap-2">

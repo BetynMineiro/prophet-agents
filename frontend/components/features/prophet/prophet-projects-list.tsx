@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useLocale, useTranslations } from "next-intl"
 import {
   deleteProphetProject,
   getProphetProjects,
@@ -14,7 +13,8 @@ import {
   type ActiveState,
 } from "@/lib/api/active-state"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
-import { Link, useRouter } from "@/i18n/navigation"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { PencilIcon, RotateCcwIcon } from "lucide-react"
 import { ListRowActionTooltip } from "../shared/list-row-action-tooltip"
 import {
@@ -36,9 +36,9 @@ import { Button } from "@/components/ui/button"
 import { ProphetProjectListPipelineCell } from "@/components/features/prophet/prophet-project-list-pipeline-cell"
 import { cn } from "@/lib/core/utils"
 
-function formatCreatedAt(iso: string, locale: string): string {
+function formatCreatedAt(iso: string): string {
   try {
-    return new Date(iso).toLocaleString(locale, {
+    return new Date(iso).toLocaleString(undefined, {
       dateStyle: "short",
       timeStyle: "short",
     })
@@ -47,12 +47,12 @@ function formatCreatedAt(iso: string, locale: string): string {
   }
 }
 
-function formatExpectedDate(isoDate: string | null, locale: string): string {
+function formatExpectedDate(isoDate: string | null): string {
   if (!isoDate) return "—"
   try {
     const [y, m, d] = isoDate.split("-").map(Number)
     if (!y || !m || !d) return isoDate
-    return new Date(y, m - 1, d).toLocaleDateString(locale, {
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, {
       dateStyle: "short",
     })
   } catch {
@@ -61,9 +61,7 @@ function formatExpectedDate(isoDate: string | null, locale: string): string {
 }
 
 export function ProphetProjectsList() {
-  const t = useTranslations("dashboard")
   const router = useRouter()
-  const locale = useLocale()
   const [items, setItems] = useState<ProphetProjectItemDto[]>([])
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -88,12 +86,12 @@ export function ProphetProjectsList() {
         })
         setItems(data)
       } catch {
-        if (!silent) toast.error(t("requestFailed"))
+        if (!silent) toast.error("Request failed. Check your connection and try again.")
       } finally {
         if (!silent) setLoading(false)
       }
     },
-    [activeState, searchTextFilter, t]
+    [activeState, searchTextFilter]
   )
 
   useEffect(() => {
@@ -122,14 +120,14 @@ export function ProphetProjectsList() {
       try {
         await restoreProphetProject(id)
         await fetchItems()
-        toast.success(t("prophetRestoreSuccess"))
+        toast.success("Project restored.")
       } catch {
-        toast.error(t("prophetRestoreFailed"))
+        toast.error("Could not restore project.")
       } finally {
         setRestoringId(null)
       }
     },
-    [fetchItems, t]
+    [fetchItems]
   )
 
   const handleDelete = useCallback(
@@ -139,34 +137,34 @@ export function ProphetProjectsList() {
         const result = await deleteProphetProject(id)
         if (result.success) {
           await fetchItems()
-          toast.success(t("prophetDeleteSuccess"))
+          toast.success("Project deleted.")
         } else {
-          toast.error(t("prophetDeleteFailed"))
+          toast.error("Could not delete project.")
         }
       } catch {
-        toast.error(t("prophetDeleteFailed"))
+        toast.error("Could not delete project.")
       } finally {
         setDeletingId(null)
       }
     },
-    [fetchItems, t]
+    [fetchItems]
   )
 
   return (
     <div className="space-y-4">
       <DashboardListToolbar
-        searchPlaceholder={t("prophetSearchPlaceholder")}
+        searchPlaceholder="Search project name or description..."
         searchText={searchText}
         onSearchTextChange={setSearchText}
         activeState={activeState}
         onActiveStateChange={setActiveState}
-        loadingText={loading ? t("tableLoading") : null}
-        activeStateAllLabel={t("activeStateFilterAll")}
-        activeStateActiveLabel={t("activeStateFilterActive")}
-        activeStateInactiveLabel={t("activeStateFilterInactive")}
+        loadingText={loading ? "Loading..." : null}
+        activeStateAllLabel="All"
+        activeStateActiveLabel="Active"
+        activeStateInactiveLabel="Inactive"
         showActiveStateFilter
         showAddButton
-        addLabel={t("addActionLabel")}
+        addLabel="Add"
         onAddClick={() => router.push("/prophet/new")}
       />
 
@@ -174,21 +172,13 @@ export function ProphetProjectsList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("prophetTableName")}</TableHead>
-              <TableHead>{t("prophetTableDescription")}</TableHead>
-              <TableHead className="whitespace-nowrap">
-                {t("prophetTableExpectedDate")}
-              </TableHead>
-              <TableHead className="whitespace-nowrap">
-                {t("prophetTableCreated")}
-              </TableHead>
-              <TableHead className="whitespace-nowrap">
-                {t("prophetTablePipeline")}
-              </TableHead>
-              <TableHead>{t("prophetTableStatus")}</TableHead>
-              <TableHead className="w-[104px] text-right">
-                {t("prophetTableActions")}
-              </TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="whitespace-nowrap">Expected date</TableHead>
+              <TableHead className="whitespace-nowrap">Created</TableHead>
+              <TableHead className="whitespace-nowrap">Pipeline</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[104px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -198,7 +188,7 @@ export function ProphetProjectsList() {
                   className="text-muted-foreground py-8 text-center"
                   colSpan={7}
                 >
-                  {t("tableNoResults")}
+                  No results.
                 </TableCell>
               </TableRow>
             ) : (
@@ -215,7 +205,7 @@ export function ProphetProjectsList() {
                       pipelineRunning &&
                         "bg-blue-500/[0.06] dark:bg-blue-500/10"
                     )}
-                    title={t("tableRowDoubleClickToEdit")}
+                    title="Double-click to edit"
                     {...editableTableRowA11yProps(goEdit)}
                   >
                     <TableCell className="font-medium">{row.name}</TableCell>
@@ -223,34 +213,29 @@ export function ProphetProjectsList() {
                       {row.description ?? "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {formatExpectedDate(row.expectedDate, locale)}
+                      {formatExpectedDate(row.expectedDate)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatCreatedAt(row.createdAtUtc, locale)}
+                      {formatCreatedAt(row.createdAtUtc)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <ProphetProjectListPipelineCell
                         status={row.latestPipelineStatus}
-                        t={t}
                       />
                     </TableCell>
                     <TableCell>
-                      {row.isActive === false
-                        ? t("statusInactive")
-                        : t("statusActive")}
+                      {row.isActive === false ? "Inactive" : "Active"}
                     </TableCell>
                     <TableCell
                       className="text-right"
                       onDoubleClick={stopRowDoubleClickNavigation}
                     >
                       <div className="flex items-center justify-end gap-0.5">
-                        <ListRowActionTooltip
-                          label={t("prophetEditActionAriaLabel")}
-                        >
+                        <ListRowActionTooltip label="Edit project">
                           <Button variant="ghost" size="icon-xs" asChild>
                             <Link
                               href={`/prophet/edit?id=${encodeURIComponent(row.id)}`}
-                              aria-label={t("prophetEditActionAriaLabel")}
+                              aria-label="Edit project"
                             >
                               <PencilIcon className="size-4" />
                             </Link>
@@ -259,15 +244,11 @@ export function ProphetProjectsList() {
                         {row.isActive === false ? (
                           <ConfirmDeleteAction
                             disabled={restoringId === row.id}
-                            ariaLabel={t("prophetRestoreActionAriaLabel")}
-                            confirmTitle={t("prophetRestoreConfirmTitle")}
-                            confirmDescription={t(
-                              "prophetRestoreConfirmDescription"
-                            )}
-                            cancelLabel={t("prophetRestoreCancelLabel")}
-                            confirmActionLabel={t(
-                              "prophetRestoreConfirmAction"
-                            )}
+                            ariaLabel="Restore project"
+                            confirmTitle="Restore this project?"
+                            confirmDescription="The project will be active again and visible in default lists."
+                            cancelLabel="Cancel"
+                            confirmActionLabel="Restore"
                             onConfirm={() => {
                               handleRestore(row.id).catch(() => {})
                             }}
@@ -278,13 +259,11 @@ export function ProphetProjectsList() {
                         {row.isActive ? (
                           <ConfirmDeleteAction
                             disabled={deletingId === row.id}
-                            ariaLabel={t("prophetDeleteActionAriaLabel")}
-                            confirmTitle={t("prophetDeleteConfirmTitle")}
-                            confirmDescription={t(
-                              "prophetDeleteConfirmDescription"
-                            )}
-                            cancelLabel={t("prophetDeleteCancelLabel")}
-                            confirmActionLabel={t("prophetDeleteConfirmAction")}
+                            ariaLabel="Delete project"
+                            confirmTitle="Delete this project?"
+                            confirmDescription="This action cannot be undone."
+                            cancelLabel="Cancel"
+                            confirmActionLabel="Delete"
                             onConfirm={() => {
                               handleDelete(row.id).catch(() => {})
                             }}

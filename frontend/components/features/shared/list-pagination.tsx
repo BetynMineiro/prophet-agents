@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useTranslations } from "next-intl"
 import { useApiRequestStatus } from "@/lib/api/request-status/use-api-request-status"
 import { toast } from "sonner"
 import { Loader2Icon } from "lucide-react"
@@ -29,7 +28,6 @@ export function DashboardListPagination({
   moreResultsLabel,
   endOfResultsLabel,
 }: Props) {
-  const t = useTranslations("dashboard")
   const { error: globalError } = useApiRequestStatus()
   const lastToastErrorRef = useRef<string | null>(null)
 
@@ -40,9 +38,9 @@ export function DashboardListPagination({
     }
     if (globalError === lastToastErrorRef.current) return
     lastToastErrorRef.current = globalError
-    toast.error(t("requestFailed"))
+    toast.error("Request failed. Check your connection and try again.")
     clearRequestError()
-  }, [globalError, t])
+  }, [globalError])
 
   return (
     <div className="space-y-0">

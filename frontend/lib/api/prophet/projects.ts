@@ -140,34 +140,3 @@ export async function restoreProphetProject(
 
   return json.data
 }
-
-export type RefineProphetProjectPayload = {
-  change_request: string
-}
-
-export type RefineProphetProjectResultDto = {
-  versionId: string
-  versionNumber: number
-  startFromStepIndex: number
-}
-
-export async function refineProphetProject(
-  projectId: string,
-  payload: RefineProphetProjectPayload
-): Promise<RefineProphetProjectResultDto> {
-  const res = await prophetPost(
-    `/v1/prophet/projects/${projectId}/refine`,
-    payload
-  )
-  const json =
-    await readProphetApiResultJson<RefineProphetProjectResultDto>(res)
-
-  if (!res.ok || !json.success || json.data == null) {
-    const message =
-      json.messages?.join(", ") || `HTTP ${res.status}` || "Failed to refine"
-    reportRequestError(message)
-    throw new Error(message)
-  }
-
-  return json.data
-}

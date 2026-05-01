@@ -1,6 +1,5 @@
 import path from "path"
 import { fileURLToPath } from "url"
-import createNextIntlPlugin from "next-intl/plugin"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const webRoot = __dirname
@@ -23,5 +22,4 @@ const nextConfig = {
   },
 }
 
-const withNextIntl = createNextIntlPlugin()
-export default withNextIntl(nextConfig)
+export default nextConfig

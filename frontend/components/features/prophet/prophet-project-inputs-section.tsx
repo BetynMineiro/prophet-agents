@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { DownloadIcon, Loader2Icon, Trash2Icon, UploadIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -39,7 +38,6 @@ function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-/** Triggers save/download in the browser (no new tab). Works with signed URLs that send Content-Disposition: attachment. */
 function triggerBrowserDownload(url: string, fileName: string): void {
   const a = document.createElement("a")
   a.href = url
@@ -53,7 +51,6 @@ function triggerBrowserDownload(url: string, fileName: string): void {
 export function ProphetProjectInputsSection({
   projectId,
 }: Readonly<{ projectId: string }>) {
-  const t = useTranslations("dashboard")
   const [items, setItems] = useState<ProphetProjectInputDocumentItemDto[]>([])
   const [loadState, setLoadState] = useState<"loading" | "idle" | "error">(
     "loading"
@@ -81,13 +78,12 @@ export function ProphetProjectInputsSection({
 
   async function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const input = e.currentTarget
-    // Capture File before clearing — `FileList` is live; resetting value empties it.
     const file = input.files?.item(0) ?? undefined
     input.value = ""
     if (!file) return
 
     if (file.size > maxBytes) {
-      toast.error(t("prophetInputsFileTooLarge", { name: file.name }))
+      toast.error(`${file.name} exceeds the 10 MB limit.`)
       return
     }
 
@@ -96,19 +92,14 @@ export function ProphetProjectInputsSection({
       const response = await uploadProphetProjectInputs(projectId, [file])
       for (const r of response.results) {
         if (r.success && r.document) {
-          toast.success(t("prophetInputsUploadFileOk", { name: r.fileName }))
+          toast.success(`${r.fileName} uploaded.`)
         } else {
-          toast.error(
-            t("prophetInputsUploadFileFail", {
-              name: r.fileName,
-              reason: r.errorMessage ?? t("prophetInputsUnknownError"),
-            })
-          )
+          toast.error(`${r.fileName}: ${r.errorMessage ?? "Unknown error"}`)
         }
       }
       await load()
     } catch {
-      toast.error(t("prophetInputsUploadFailed"))
+      toast.error("Upload request failed.")
     } finally {
       setUploading(false)
     }
@@ -118,12 +109,12 @@ export function ProphetProjectInputsSection({
     try {
       const url = await getProphetProjectInputDownloadUrl(projectId, doc.id)
       if (!url) {
-        toast.error(t("prophetInputsDownloadFailed"))
+        toast.error("Could not start download.")
         return
       }
       triggerBrowserDownload(url, doc.originalFileName)
     } catch {
-      toast.error(t("prophetInputsDownloadFailed"))
+      toast.error("Could not start download.")
     }
   }
 
@@ -134,10 +125,10 @@ export function ProphetProjectInputsSection({
     setDeletingId(doc.id)
     try {
       await deleteProphetProjectInput(projectId, doc.id)
-      toast.success(t("prophetInputsDeleteSuccess"))
+      toast.success("File deleted.")
       await load()
     } catch {
-      toast.error(t("prophetInputsDeleteFailed"))
+      toast.error("Could not delete file.")
     } finally {
       setDeletingId(null)
     }
@@ -147,14 +138,14 @@ export function ProphetProjectInputsSection({
     return (
       <div className="text-muted-foreground flex items-center gap-2 py-8 text-sm">
         <Loader2Icon className="size-4 animate-spin" aria-hidden />
-        {t("tableLoading")}
+        Loading...
       </div>
     )
   }
 
   if (loadState === "error") {
     return (
-      <p className="text-destructive text-sm">{t("prophetInputsLoadFailed")}</p>
+      <p className="text-destructive text-sm">Could not load documents.</p>
     )
   }
 
@@ -162,7 +153,7 @@ export function ProphetProjectInputsSection({
     <>
       <div className="space-y-4">
         <p className="text-muted-foreground text-sm">
-          {t("prophetInputsDescription")}
+          Upload one file at a time: PDF, Word (.doc / .docx), Markdown, plain text, JSON, code, etc. (max 10 MB). Files are stored securely and listed below.
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -183,39 +174,29 @@ export function ProphetProjectInputsSection({
             {uploading ? (
               <>
                 <Loader2Icon className="mr-2 size-4 animate-spin" aria-hidden />
-                {t("prophetInputsUploading")}
+                Uploading…
               </>
             ) : (
               <>
                 <UploadIcon className="mr-2 size-4" aria-hidden />
-                {t("prophetInputsChooseFile")}
+                Choose file
               </>
             )}
           </Button>
-          <span className="text-muted-foreground text-xs">
-            {t("prophetInputsMaxSizeHint")}
-          </span>
+          <span className="text-muted-foreground text-xs">Max 10 MB per file.</span>
         </div>
 
         {items.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t("prophetInputsEmpty")}
-          </p>
+          <p className="text-muted-foreground text-sm">No files uploaded yet.</p>
         ) : (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("prophetInputsColumnName")}</TableHead>
-                  <TableHead className="w-[100px]">
-                    {t("prophetInputsColumnSize")}
-                  </TableHead>
-                  <TableHead className="w-[180px]">
-                    {t("prophetInputsColumnUploaded")}
-                  </TableHead>
-                  <TableHead className="w-[120px] text-end">
-                    {t("prophetInputsColumnActions")}
-                  </TableHead>
+                  <TableHead>File</TableHead>
+                  <TableHead className="w-[100px]">Size</TableHead>
+                  <TableHead className="w-[180px]">Uploaded</TableHead>
+                  <TableHead className="w-[120px] text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -234,7 +215,7 @@ export function ProphetProjectInputsSection({
                         variant="ghost"
                         size="icon"
                         className="size-8"
-                        aria-label={t("prophetInputsDownload")}
+                        aria-label="Download"
                         disabled={deletingId === row.id}
                         onClick={() => void onDownload(row)}
                       >
@@ -245,7 +226,7 @@ export function ProphetProjectInputsSection({
                         variant="ghost"
                         size="icon"
                         className="text-destructive hover:text-destructive size-8"
-                        aria-label={t("prophetInputsDelete")}
+                        aria-label="Delete"
                         disabled={deletingId === row.id}
                         onClick={() => setDeleteTarget(row)}
                       >
@@ -272,22 +253,18 @@ export function ProphetProjectInputsSection({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("prophetInputsDeleteConfirmTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete this file?</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("prophetInputsDeleteConfirmDescription")}
+              The file will be removed from storage and cannot be recovered.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t("prophetDeleteCancelLabel")}
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => void confirmDelete()}
             >
-              {t("prophetDeleteConfirmAction")}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

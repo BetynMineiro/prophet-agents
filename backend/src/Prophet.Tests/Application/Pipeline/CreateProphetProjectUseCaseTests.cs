@@ -1,5 +1,4 @@
 using Moq;
-using Prophet.Application.Interfaces;
 using Prophet.Application.Interfaces.Pipeline;
 using Prophet.Application.Services.EntityId;
 using Prophet.Application.UserCases.Pipeline.Projects;
@@ -15,7 +14,6 @@ public class CreatePipelineProjectUseCaseTests
     private readonly Mock<IEntityIdGenerator> _idGeneratorMock;
     private readonly Mock<IValidator<CreatePipelineProjectRequest>> _validatorMock;
     private readonly ValidationErrorCollector _errorCollector;
-    private readonly Mock<ICurrentUserContext> _currentUserMock;
     private readonly CreatePipelineProjectUseCase _useCase;
 
     public CreatePipelineProjectUseCaseTests()
@@ -28,8 +26,6 @@ public class CreatePipelineProjectUseCaseTests
         _validatorMock = new Mock<IValidator<CreatePipelineProjectRequest>>();
         _validatorMock.Setup(x => x.Validate(It.IsAny<CreatePipelineProjectRequest>())).Returns(ValidationResult.Ok());
         _errorCollector = new ValidationErrorCollector();
-        _currentUserMock = new Mock<ICurrentUserContext>();
-        _currentUserMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
         _useCase = new CreatePipelineProjectUseCase(_storeMock.Object, _idGeneratorMock.Object, _validatorMock.Object, _errorCollector);
     }
 

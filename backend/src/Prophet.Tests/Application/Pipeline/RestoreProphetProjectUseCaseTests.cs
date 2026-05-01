@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Moq;
-using Prophet.Application.Interfaces;
 using Prophet.Application.Interfaces.Pipeline;
 using Prophet.Application.UserCases.Pipeline.Projects;
 using Prophet.Application.UserCases.Pipeline.Validators;
@@ -12,7 +11,6 @@ namespace Prophet.Tests.Application.Prophet;
 public class RestorePipelineProjectUseCaseTests
 {
     private readonly Mock<IPipelineProjectStore> _storeMock;
-    private readonly Mock<ICurrentUserContext> _currentUserMock;
     private readonly IValidationErrorCollector _errorCollector;
     private readonly RestorePipelineProjectUseCase _useCase;
 
@@ -21,8 +19,6 @@ public class RestorePipelineProjectUseCaseTests
         _storeMock = new Mock<IPipelineProjectStore>();
         _storeMock.Setup(x => x.GetLatestArtifactVersionPipelineByProjectIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, (Guid VersionId, PipelineRunStatus PipelineStatus)>());
-        _currentUserMock = new Mock<ICurrentUserContext>();
-        _currentUserMock.Setup(x => x.UserId).Returns(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
         _errorCollector = new ValidationErrorCollector();
         var idValidator = new PipelineProjectIdQueryValidator();
         _useCase = new RestorePipelineProjectUseCase(_storeMock.Object, idValidator, _errorCollector);

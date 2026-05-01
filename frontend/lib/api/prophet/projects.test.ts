@@ -4,7 +4,6 @@ import {
   deleteProphetProject,
   getProphetProject,
   getProphetProjects,
-  refineProphetProject,
   restoreProphetProject,
   updateProphetProject,
 } from "./projects"
@@ -142,25 +141,5 @@ describe("projects", () => {
     expect(prophetPatchMock).toHaveBeenCalledWith(
       `/v1/prophet/projects/${projectId}/restore`
     )
-  })
-
-  it("refineProphetProject posts change_request and returns dto", async () => {
-    const dto = {
-      versionId: "019d0000-0000-7000-8000-000000000002",
-      versionNumber: 3,
-      startFromStepIndex: 4,
-    }
-    prophetPostMock.mockResolvedValueOnce(
-      prophetTestJsonResponse({ success: true, data: dto })
-    )
-
-    const result = await refineProphetProject(projectId, {
-      change_request: "tweak architecture",
-    })
-    expect(prophetPostMock).toHaveBeenCalledWith(
-      `/v1/prophet/projects/${projectId}/refine`,
-      { change_request: "tweak architecture" }
-    )
-    expect(result).toEqual(dto)
   })
 })

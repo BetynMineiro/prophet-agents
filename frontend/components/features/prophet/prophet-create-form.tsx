@@ -2,8 +2,7 @@
 
 import { useRef, useState } from "react"
 import type { FormSubmitEvent } from "@/lib/types/form-submit-event"
-import { useTranslations } from "next-intl"
-import { useRouter } from "@/i18n/navigation"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,7 +26,6 @@ import {
 } from "@/lib/api/prophet"
 
 export function ProphetCreateForm() {
-  const t = useTranslations("dashboard")
   const router = useRouter()
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -59,7 +57,7 @@ export function ProphetCreateForm() {
     e.preventDefault()
     const normalizedName = name.trim()
     if (!normalizedName) {
-      toast.error(t("prophetCreateValidationName"))
+      toast.error("Name is required.")
       return
     }
     const descTrimmed = description.trim()
@@ -76,10 +74,10 @@ export function ProphetCreateForm() {
     setIsSubmitting(true)
     try {
       await createProphetProject(payload)
-      toast.success(t("prophetCreateSuccess"))
+      toast.success("Project created.")
       router.push("/prophet")
     } catch {
-      toast.error(t("prophetCreateFailed"))
+      toast.error("Could not create project.")
     } finally {
       setIsSubmitting(false)
     }
@@ -97,12 +95,12 @@ export function ProphetCreateForm() {
     <>
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="prophet-create-name">{t("prophetCreateName")}</Label>
+          <Label htmlFor="prophet-create-name">Name</Label>
           <Input
             id="prophet-create-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={t("prophetCreateNamePlaceholder")}
+            placeholder="Project name"
             maxLength={256}
             required
             disabled={isSubmitting}
@@ -111,14 +109,12 @@ export function ProphetCreateForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="prophet-create-description">
-            {t("prophetCreateDescriptionLabel")}
-          </Label>
+          <Label htmlFor="prophet-create-description">Description</Label>
           <Textarea
             id="prophet-create-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder={t("prophetCreateDescriptionPlaceholder")}
+            placeholder="Optional"
             maxLength={4096}
             disabled={isSubmitting}
             rows={4}
@@ -126,9 +122,7 @@ export function ProphetCreateForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="prophet-create-expected">
-            {t("prophetExpectedDateLabel")}
-          </Label>
+          <Label htmlFor="prophet-create-expected">Expected date</Label>
           <Input
             id="prophet-create-expected"
             type="date"
@@ -140,11 +134,9 @@ export function ProphetCreateForm() {
 
         <div className="flex items-center justify-between rounded-md border p-3">
           <div className="space-y-1">
-            <Label htmlFor="prophet-create-active">
-              {t("prophetCreateActiveLabel")}
-            </Label>
+            <Label htmlFor="prophet-create-active">Active</Label>
             <p className="text-muted-foreground text-sm">
-              {t("prophetCreateActiveHint")}
+              Inactive projects are hidden from the default list until reactivated.
             </p>
           </div>
           <Switch
@@ -162,16 +154,16 @@ export function ProphetCreateForm() {
             onClick={requestCancel}
             disabled={isSubmitting}
           >
-            {t("prophetCreateCancel")}
+            Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2Icon className="mr-2 size-4 animate-spin" aria-hidden />
-                {t("prophetCreateSubmitting")}
+                Creating…
               </>
             ) : (
-              t("prophetCreateSubmit")
+              "Create"
             )}
           </Button>
         </div>
@@ -180,23 +172,21 @@ export function ProphetCreateForm() {
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("prophetCancelConfirmTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("prophetCancelConfirmDescription")}
+              Any information you entered will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>
-              {t("prophetCancelConfirmStay")}
+              Keep editing
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={isSubmitting}
               onClick={() => router.push("/prophet")}
             >
-              {t("prophetCancelConfirmLeave")}
+              Leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -205,11 +195,9 @@ export function ProphetCreateForm() {
       <AlertDialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("prophetCreateSubmitConfirmTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Create this project?</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("prophetCreateSubmitConfirmDescription")}
+              It will appear in the list. You can change it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -219,13 +207,13 @@ export function ProphetCreateForm() {
                 pendingSubmitRef.current = null
               }}
             >
-              {t("prophetCreateSubmitConfirmBack")}
+              Back
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={isSubmitting}
               onClick={() => confirmCreate()}
             >
-              {t("prophetCreateSubmitConfirmAction")}
+              Yes, create
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

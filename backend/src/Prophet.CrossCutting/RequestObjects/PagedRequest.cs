@@ -31,9 +31,4 @@ public class PagedRequest
     /// - Inactive: only inactive
     /// </summary>
     public ActiveState ActiveState { get; set; } = ActiveState.All;
-
-    /// <summary>
-    /// Optional role name filter (exact match). When null, returns users of all roles.
-    /// </summary>
-    public string? Role { get; set; }
 }

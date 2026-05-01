@@ -13,14 +13,13 @@ import { formatProphetProjectListPipelineStatus } from "@/lib/prophet/format-pro
 
 type Props = {
   status: string | null | undefined
-  t: (key: string) => string
 }
 
 /**
  * Pipeline status for one grid row: icon + label (Running = blue spinner, Failed red, Paused orange, Completed green).
  */
-export function ProphetProjectListPipelineCell({ status, t }: Props) {
-  const label = formatProphetProjectListPipelineStatus(status, t)
+export function ProphetProjectListPipelineCell({ status }: Props) {
+  const label = formatProphetProjectListPipelineStatus(status)
   const raw = status?.trim() ?? ""
   const low = raw.toLowerCase()
 
